@@ -45,6 +45,4 @@ langchain-openai
 langchain
 python-dotenv
 streamlit
-langchain
-langchain-openai
 openai
