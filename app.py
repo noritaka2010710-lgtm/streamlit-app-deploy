@@ -1,45 +1,46 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import streamlit as st
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
 
-st.title("サンプルアプリ②: 少し複雑なWebアプリ")
 
-st.write("##### 動作モード1: 文字数カウント")
-st.write("入力フォームにテキストを入力し、「実行」ボタンを押すことで文字数をカウントできます。")
-st.write("##### 動作モード2: BMI値の計算")
-st.write("身長と体重を入力することで、肥満度を表す体型指数のBMI値を算出できます。")
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
 
-selected_item = st.radio(
+EXPERT_SYSTEM = {
+    "キャリア相談の専門家": "あなたはキャリア相談の専門家です。相談者に寄り添い、仕事や転職に関する的確な助言を行ってください。",
+    "子育て支援の専門家": "あなたは子育て支援の専門家です。保護者の不安に寄り添い、子育ての悩みに優しく回答してください。"
+}
+
+def call_expert_llm(input_text: str, selected_expert: str) -> str:
+    system_prompt = EXPERT_SYSTEM[selected_expert]
+
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=input_text)
+    ]
+    result = llm.invoke(messages)
+    return result.content
+
+st.title("課題アプリ")
+
+st.write("##### 動作モード1: キャリア相談の専門家")
+st.write("##### 動作モード2: 子育て支援の専門家")
+st.write("専門家を選択し、テキストを入力することで、専門家が回答します。")
+
+expert = st.radio(
     "動作モードを選択してください。",
-    ["文字数カウント", "BMI値の計算"]
+    ["キャリア相談の専門家", "子育て支援の専門家"]
 )
 
-st.divider()
+text = st.text_input("質問を入力してください")
 
-if selected_item == "文字数カウント":
-    input_message = st.text_input(label="文字数のカウント対象となるテキストを入力してください。")
-    text_count = len(input_message)
-
-else:
-    height = st.text_input(label="身長（cm）を入力してください。")
-    weight = st.text_input(label="体重（kg）を入力してください。")
-
-if st.button("実行"):
-    st.divider()
-
-    if selected_item == "文字数カウント":
-        if input_message:
-            st.write(f"文字数: **{text_count}**")
-
-        else:
-            st.error("カウント対象となるテキストを入力してから「実行」ボタンを押してください。")
-
+if st.button("送信"):
+    if text.strip() == "":
+        st.warning("質問内容を入力してください。")
     else:
-        if height and weight:
-            try:
-                bmi = round(int(weight) / ((int(height)/100) ** 2), 1)
-                st.write(f"BMI値: {bmi}")
-
-            except ValueError as e:
-                st.error("身長と体重は数値で入力してください。")
-
-        else:
-            st.error("身長と体重をどちらも入力してください。")
+        answer = call_expert_llm(text, expert)
+        st.write("### 回答")
+        st.write(answer)
